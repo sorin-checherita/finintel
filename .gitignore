@@ -1,0 +1,4 @@
+__pycache__/
+db/indicators.db
+.env
+*.pyc
