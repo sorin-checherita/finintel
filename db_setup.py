@@ -1,6 +1,3 @@
-import sqlite3
-
-
 def create_database(db_name="financial_data.db"):
     """
     Create the SQLite database and the required tables.

@@ -13,11 +13,11 @@ document.getElementById("fetch-data").addEventListener("click", async () => {
         data.data.forEach((item) => {
             output.innerHTML += `
                 <div>
-                    <strong>${item.ticker}</strong>: ${item.name}<br>
-                    Price: $${item.price.toFixed(2)}<br>
-                    P/E Ratio: ${item.pe_ratio ? item.pe_ratio.toFixed(2) : "N/A"}<br>
-                    Revenue: $${formatNumber(item.revenue)}<br>
-                    EBITDA: ${formatPercentage(item.ebitda, item.revenue)}<br>
+                    <strong>${item.ticker}</strong>: ${item.name || "N/A"}<br>
+                    Price: ${item.price}<br>
+                    P/E Ratio: ${item.pe_ratio}<br>
+                    Revenue: ${item.revenue}<br>
+                    EBITDA: ${item.ebitda}<br>
                     <hr>
                 </div>
             `;
@@ -26,16 +26,3 @@ document.getElementById("fetch-data").addEventListener("click", async () => {
         output.innerHTML = `Error fetching data: ${error.message}`;
     }
 });
-
-// Helper function to format large numbers with commas
-function formatNumber(num) {
-    if (!num) return "N/A";
-    return num.toLocaleString("en-US");
-}
-
-// Helper function to calculate and format EBITDA as a percentage of revenue
-function formatPercentage(ebitda, revenue) {
-    if (!ebitda || !revenue) return "N/A";
-    const percentage = (ebitda / revenue) * 100;
-    return `${percentage.toFixed(2)}%`;
-}

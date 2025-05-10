@@ -11,7 +11,7 @@ Aplicație Python care extrage și monitorizează automat indicatori financiari 
 ## 🔧 Stack Tehnologic
 - Python 3.x
 - yfinance
-- Streamlit
+- FastAPI
 - SQLite
 - pandas, matplotlib
 
@@ -21,3 +21,10 @@ Aplicație Python care extrage și monitorizează automat indicatori financiari 
 
 ```bash
 pip install -r requirements.txt
+
+## Todo:
+Add Pagination to /financial-data
+Add Sorting and Filtering:
+Add Historical Data:
+Deploy the Application:
+Frontend Enhancements:

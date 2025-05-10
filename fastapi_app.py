@@ -3,6 +3,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fetch_data import fetch_all_data, load_tickers_from_csv
 from db_setup import create_database
+from formatters import format_price, format_pe_ratio, format_number
+from indicators.calculate import calculate_ebitda_percentage
 import sqlite3
 
 app = FastAPI()
@@ -24,19 +26,20 @@ def get_financial_data():
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
 
+        # Fetch raw data from the database
         cursor.execute("SELECT * FROM financial_data")
         rows = cursor.fetchall()
 
-        # Structurăm datele într-un format JSON
+        # Format the data dynamically before returning
         data = [
             {
                 "ticker": row[0],
-                "name": row[1],
-                "price": row[2],
-                "pe_ratio": row[3],
-                "earnings_per_share": row[4],
-                "revenue": row[5],
-                "ebitda": row[6],
+                "name": row[1] or "N/A",
+                "price": format_price(row[2]),
+                "pe_ratio": format_pe_ratio(row[3]),
+                "earnings_per_share": format_price(row[4]),
+                "revenue": format_number(row[5]),
+                "ebitda": calculate_ebitda_percentage(row[6], row[5]),
             }
             for row in rows
         ]
@@ -51,17 +54,17 @@ def get_financial_data():
 @app.post("/update-data")
 def update_financial_data():
     try:
-        # Încarcă tickerele din fișierul CSV
+        # Load tickers from the CSV file
         tickers = load_tickers_from_csv("tickers.csv")
         if not tickers:
             raise HTTPException(status_code=400, detail="No tickers found in tickers.csv")
 
-        # Fetch date financiare pentru tickere
+        # Fetch financial data for the tickers
         financial_data = fetch_all_data(tickers)
 
-        # Salvează datele în baza de date
+        # Save the data to the database and remove outdated tickers
         from fetch_data import save_to_sqlite
-        save_to_sqlite(financial_data)
+        save_to_sqlite(financial_data, db_name=DB_NAME, tickers=tickers)
 
         return {"message": "Financial data updated successfully!"}
     except Exception as e:
