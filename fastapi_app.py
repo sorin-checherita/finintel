@@ -1,4 +1,6 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from fetch_data import fetch_all_data, load_tickers_from_csv
 from db_setup import create_database
 import sqlite3
@@ -7,9 +9,15 @@ app = FastAPI()
 
 DB_NAME = "financial_data.db"
 
+# Mount static files (CSS, JS, etc.)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Serve the index.html file at the root path
+@app.get("/")
+def read_root():
+    return FileResponse("static/index.html")
+
 # Endpoint pentru a obține toate datele financiare din baza de date
-
-
 @app.get("/financial-data")
 def get_financial_data():
     try:
@@ -97,9 +105,3 @@ def initialize_database():
         return {"message": "Database initialized successfully!"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error initializing database: {e}")
-
-
-# Endpoint pentru a verifica starea aplicației
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to FinIntel API!"}
