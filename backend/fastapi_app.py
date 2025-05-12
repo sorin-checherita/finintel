@@ -6,10 +6,11 @@ from db_setup import create_database
 from formatters import format_price, format_pe_ratio, format_number
 from indicators.calculate import calculate_ebitda_percentage
 import sqlite3
+from pydantic import BaseModel
 
 app = FastAPI()
 
-DB_NAME = "financial_data.db"
+DB_NAME = "data/financial_data.db"
 
 # Mount static files (CSS, JS, etc.)
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -108,3 +109,67 @@ def initialize_database():
         return {"message": "Database initialized successfully!"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error initializing database: {e}")
+
+
+class TickerRequest(BaseModel):
+    ticker: str
+
+# Add a new ticker
+@app.post("/tickers")
+def add_ticker(ticker_request: TickerRequest):
+    try:
+        ticker = ticker_request.ticker.strip().upper()
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+
+        # Check if the ticker already exists
+        cursor.execute("SELECT ticker FROM financial_data WHERE ticker = ?", (ticker,))
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Ticker already exists")
+
+        # Insert the new ticker with placeholder data
+        cursor.execute("INSERT INTO financial_data (ticker) VALUES (?)", (ticker,))
+        conn.commit()
+        conn.close()
+        return {"message": f"Ticker {ticker} added successfully!"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error adding ticker: {e}")
+
+
+# Delete a ticker
+@app.delete("/tickers/{ticker}")
+def delete_ticker(ticker: str):
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+
+        # Delete the ticker
+        cursor.execute("DELETE FROM financial_data WHERE ticker = ?", (ticker,))
+        conn.commit()
+        conn.close()
+        return {"message": f"Ticker {ticker} deleted successfully!"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting ticker: {e}")
+
+
+# Refresh data for all tickers
+@app.post("/refresh-data")
+def refresh_data():
+    try:
+        # Load tickers from the database
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("SELECT ticker FROM financial_data")
+        tickers = [row[0] for row in cursor.fetchall()]
+        conn.close()
+
+        if not tickers:
+            raise HTTPException(status_code=400, detail="No tickers found to refresh")
+
+        # Fetch and update data
+        financial_data = fetch_all_data(tickers)
+        save_to_sqlite(financial_data, db_name=DB_NAME, tickers=tickers)
+
+        return {"message": "Data refreshed successfully!"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error refreshing data: {e}")

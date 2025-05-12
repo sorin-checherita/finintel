@@ -55,7 +55,7 @@ def fetch_all_data(tickers):
     return all_data
 
 
-def save_to_sqlite(data, db_name="financial_data.db", tickers=None):
+def save_to_sqlite(data, db_name="data/financial_data.db", tickers=None):
     """
     Save financial data to an SQLite database and remove outdated tickers.
 
