@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from backend.fetch_data import fetch_all_data, load_tickers_from_csv, save_to_sqlite
+from fastapi.middleware.cors import CORSMiddleware
+from backend.fetch_data import fetch_all_data, load_tickers_from_csv, save_to_sqlite, add_ticker_to_database
 from backend.db_setup import create_database
 from backend.utils.formatters import format_price, format_pe_ratio, format_number
 from backend.indicators.calculate import calculate_ebitda_percentage
@@ -7,6 +8,15 @@ import sqlite3
 from pydantic import BaseModel
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Replace with your frontend's URL
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
 
 DB_NAME = "database/financial_data.db"
 
@@ -116,22 +126,16 @@ class TickerRequest(BaseModel):
 def add_ticker(ticker_request: TickerRequest):
     try:
         ticker = ticker_request.ticker.strip().upper()
-        conn = sqlite3.connect(DB_NAME)
-        cursor = conn.cursor()
 
-        # Check if the ticker already exists
-        cursor.execute("SELECT ticker FROM financial_data WHERE ticker = ?", (ticker,))
-        if cursor.fetchone():
-            raise HTTPException(status_code=400, detail="Ticker already exists")
+        # Add the ticker to the database
+        financial_data = add_ticker_to_database(ticker, db_name=DB_NAME)
+        if not financial_data:
+            raise HTTPException(status_code=400, detail=f"Could not fetch data for ticker: {ticker}")
 
-        # Insert the new ticker with placeholder data
-        cursor.execute("INSERT INTO financial_data (ticker) VALUES (?)", (ticker,))
-        conn.commit()
-        conn.close()
-        return {"message": f"Ticker {ticker} added successfully!"}
+        return {"message": f"Ticker {ticker} added successfully with financial data!"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error adding ticker: {e}")
-
+    
 
 # Delete a ticker
 @app.delete("/tickers/{ticker}")

@@ -27,22 +27,22 @@ def fetch_financial_data(ticker):
         return {
             "ticker": ticker,
             "name": info.get("shortName") or "N/A",
-            "price": format_price(info.get("currentPrice")),  # Format price
-            "pe_ratio": format_pe_ratio(info.get("forwardPE")),  # Format P/E ratio
-            "earnings_per_share": format_price(info.get("trailingEps")),  # Format EPS as price
-            "revenue": format_number(revenue),  # Format revenue
-            "ebitda": calculate_ebitda_percentage(ebitda, revenue),  # Format EBITDA as percentage
+            "price": info.get("currentPrice"),
+            "pe_ratio": info.get("forwardPE"),
+            "earnings_per_share": info.get("trailingEps"),
+            "revenue": revenue,
+            "ebitda": ebitda,
         }
     except Exception as e:
         print(f"Error fetching data for {ticker}: {e}")
         return {
             "ticker": ticker,
             "name": "N/A",
-            "price": "N/A",
-            "pe_ratio": "N/A",
-            "earnings_per_share": "N/A",
-            "revenue": "N/A",
-            "ebitda": "N/A",
+            "price": None,
+            "pe_ratio": None,
+            "earnings_per_share": None,
+            "revenue": None,
+            "ebitda": None,
         }
 
 
@@ -76,29 +76,18 @@ def save_to_sqlite(data, db_name="database/financial_data.db", tickers=None):
 
         # Insert or update data for the current tickers
         for entry in data:
-            # Apply formatting before saving
-            formatted_entry = {
-                "ticker": entry["ticker"],
-                "name": entry["name"] or "N/A",
-                "price": format_price(entry["price"]),
-                "pe_ratio": format_pe_ratio(entry["pe_ratio"]),
-                "earnings_per_share": format_price(entry["earnings_per_share"]),  # Format EPS as price
-                "revenue": format_number(entry["revenue"]),
-                "ebitda": calculate_ebitda_percentage(entry["ebitda"], entry["revenue"]),
-            }
-
             cursor.execute('''
                 INSERT OR REPLACE INTO financial_data (
                     ticker, name, price, pe_ratio, earnings_per_share, revenue, ebitda
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', (
-                formatted_entry["ticker"],
-                formatted_entry["name"],
-                formatted_entry["price"],
-                formatted_entry["pe_ratio"],
-                formatted_entry["earnings_per_share"],
-                formatted_entry["revenue"],
-                formatted_entry["ebitda"],
+                entry["ticker"],
+                entry["name"],
+                entry["price"],
+                entry["pe_ratio"],
+                entry["earnings_per_share"],
+                entry["revenue"],
+                entry["ebitda"],
             ))
 
         conn.commit()
@@ -107,6 +96,33 @@ def save_to_sqlite(data, db_name="database/financial_data.db", tickers=None):
         print(f"Error saving data to SQLite: {e}")
     finally:
         conn.close()
+
+
+def add_ticker_to_database(ticker, db_name="database/financial_data.db"):
+    """
+     Fetch financial data for a ticker and save it to the database.
+
+    Args:
+        ticker (str): The ticker symbol to add.
+        db_name (str): The name of the SQLite database file.
+
+    Returns:
+        dict: The financial data for the ticker.
+    """
+    try:
+        # Fetch financial data for the ticker
+        financial_data = fetch_financial_data(ticker)
+        if not financial_data:
+            raise ValueError(f"Could not fetch data for ticker: {ticker}")
+        
+        # Save to database
+        save_to_sqlite([financial_data], db_name=db_name)
+        print(f"Ticker {ticker} added to database with data: {financial_data}")
+        return financial_data
+    
+    except Exception as e:
+        print(f"Error adding ticker {ticker} to database: {e}")
+        return None
 
 
 # Example usage
