@@ -1,24 +1,20 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-from fetch_data import fetch_all_data, load_tickers_from_csv
-from db_setup import create_database
-from formatters import format_price, format_pe_ratio, format_number
-from indicators.calculate import calculate_ebitda_percentage
+from backend.fetch_data import fetch_all_data, load_tickers_from_csv, save_to_sqlite
+from backend.db_setup import create_database
+from backend.utils.formatters import format_price, format_pe_ratio, format_number
+from backend.indicators.calculate import calculate_ebitda_percentage
 import sqlite3
 from pydantic import BaseModel
 
 app = FastAPI()
 
-DB_NAME = "data/financial_data.db"
+DB_NAME = "database/financial_data.db"
 
-# Mount static files (CSS, JS, etc.)
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Serve the index.html file at the root path
 @app.get("/")
 def read_root():
-    return FileResponse("static/index.html")
+    return {"message": "Welcome to the FinIntel API. Visit /docs for API documentation."}
+
 
 # Endpoint pentru a obține toate datele financiare din baza de date
 @app.get("/financial-data")
@@ -64,7 +60,7 @@ def update_financial_data():
         financial_data = fetch_all_data(tickers)
 
         # Save the data to the database and remove outdated tickers
-        from fetch_data import save_to_sqlite
+        from backend.fetch_data import save_to_sqlite
         save_to_sqlite(financial_data, db_name=DB_NAME, tickers=tickers)
 
         return {"message": "Financial data updated successfully!"}
@@ -113,6 +109,7 @@ def initialize_database():
 
 class TickerRequest(BaseModel):
     ticker: str
+
 
 # Add a new ticker
 @app.post("/tickers")

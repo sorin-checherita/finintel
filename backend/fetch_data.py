@@ -1,9 +1,9 @@
 import yfinance as yf
 import csv
 import sqlite3
-from db_setup import create_database  # Import the database setup function
-from indicators.calculate import calculate_ebitda_percentage
-from formatters import format_price, format_pe_ratio, format_number
+from backend.db_setup import create_database  # Import the database setup function
+from backend.indicators.calculate import calculate_ebitda_percentage
+from backend.utils.formatters import format_price, format_pe_ratio, format_number
 
 
 def load_tickers_from_csv(filename="tickers.csv"):
@@ -55,7 +55,7 @@ def fetch_all_data(tickers):
     return all_data
 
 
-def save_to_sqlite(data, db_name="data/financial_data.db", tickers=None):
+def save_to_sqlite(data, db_name="database/financial_data.db", tickers=None):
     """
     Save financial data to an SQLite database and remove outdated tickers.
 

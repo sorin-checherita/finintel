@@ -1,4 +1,7 @@
-def create_database(db_name="data/financial_data.db"):
+import sqlite3
+
+
+def create_database(db_name="database/financial_data.db"):
     """
     Create the SQLite database and the required tables.
 
@@ -32,3 +35,4 @@ def create_database(db_name="data/financial_data.db"):
 
 if __name__ == "__main__":
     create_database()
+    
